@@ -1,52 +1,81 @@
 const connection = require('./connection');
 
+const array = [];
+
 class Database {
-    constructor(connection){
+    constructor(){
         this.connection = connection;
     }
-    // about 7 queries...
 
-    createDepartments(){
-        return this.connection.query(
+    viewEmployees(){
+        this.connection.query('SELECT employee.id, employee.first_name, employee.last_name, role.salary, department.department, role.title, employee.manager_id FROM employee LEFT JOIN role ON (employee.role_id=role.id) LEFT JOIN department ON (role.department_id=department.id);', (err, results) => {
+            if (err) {
+                throw err;
+            }
+        console.table(results);
+        });
+    }
+
+
+    createDepartment(){
+        this.connection.query(
             // write the query here...
             'SELECT'
         );
     }
 
     createEmployee(){
-        return this.connection.query(
+        this.connection.query(
             // write the query here...
         );
     }
 
     createRole(){
-        return this.connection.query(
+        this.connection.query(
             // write the query here...
         );
     }
 
-    findRole(){
-        return this.connection.query(
-            // write the query here...
-        );
-    }
+    removeEmployee(){}
 
-    findEmployee(){
-        return this.connection.query(
+    // findRole(){
+    //     this.connection.query(
+    //         // write the query here...
+    //     );
+    // }
+
+    findEmployeesByManager(){
+        this.connection.query(
             // write the query here...
         );
     }
 
     findDepartment(){
-        return this.connection.query(
+        this.connection.query('SELECT department FROM department', (err, result) => {
+            const departmentArray = [];
+            result.forEach((department) => {
+                departmentArray.push(department.department);
+            })
+            console.log(departmentArray);
+            return departmentArray;
+        });
+    }
+
+    findEmployeeByDepartment(){
+        this.connection.query(
             // write the query here...
         );
     }
 
-    updateEmployee(){
+    updateEmployeeRole(){
 
     }
 
+    updateEmployeeManager(){}
+
+    quit(){
+        this.connection.end();
+    }
 }
 
-module.exports = new Database(connection);
+module.exports = Database;
