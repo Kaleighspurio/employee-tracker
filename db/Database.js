@@ -9,7 +9,7 @@ class Database {
     createDepartments(){
         return this.connection.query(
             // write the query here...
-            SELECT
+            'SELECT'
         );
     }
 
