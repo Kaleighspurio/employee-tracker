@@ -37,26 +37,26 @@ const start = () => {
         if (answer.choices === "View All Employees"){
         newDB.viewEmployees();
         } else if (answer.choices === "View All Employees by Department") {
-            connection.query('SELECT department FROM department', (err, result) => {
-                if (err){
-                    throw err;
-                }
-                const departmentArray = [];
-                result.forEach((department) => {
-                    departmentArray.push(department.department);
-                })
-                inquirer.prompt({
-                    type: "list",
-                    name: "department",
-                    message: "Which department would you like to view?",
-                    choices: departmentArray
-                }).then((answer) => {
-                    console.log(answer.department);
-                    newDB.findEmployeeByDepartment(answer.department);
-                });
+            // connection.query('SELECT department FROM department', (err, result) => {
+            //     if (err){
+            //         throw err;
+            //     }
+            //     const departmentArray = [];
+            //     result.forEach((department) => {
+            //         departmentArray.push(department.department);
+            //     })
+            //     inquirer.prompt({
+            //         type: "list",
+            //         name: "department",
+            //         message: "Which department would you like to view?",
+            //         choices: departmentArray
+            //     }).then((answer) => {
+            //         console.log(answer.department);
+            //         newDB.findEmployeeByDepartment(answer.department);
+            //     });
                 
-            });
-            // newDB.findDepartment();
+            // });
+            newDB.findDepartment();
         } else if (answer.chocies === "View all Employees by Manager") {
             newDB.findEmployeesByManager();
         } else if (answer.choices === "Add Employee") {

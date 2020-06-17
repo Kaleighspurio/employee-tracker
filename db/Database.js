@@ -52,7 +52,25 @@ class Database {
     }
 
     findDepartment(){
-
+        this.connection.query('SELECT department FROM department', (err, result) => {
+            if (err){
+                throw err;
+            }
+            const departmentArray = [];
+            result.forEach((department) => {
+                departmentArray.push(department.department);
+            })
+            inquirer.prompt({
+                type: "list",
+                name: "department",
+                message: "Which department would you like to view?",
+                choices: departmentArray
+            }).then((answer) => {
+                console.log(answer.department);
+                this.findEmployeeByDepartment(answer.department);
+            });
+            
+        });
     }
 
     findEmployeeByDepartment(department){
