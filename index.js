@@ -1,6 +1,8 @@
 const inquirer = require('inquirer');
 const Database = require('./db/Database');
 const newDB = new Database();
+const connection = require('./db/connection');
+const { end } = require('./db/connection');
 
 // create a prompt where the app is started
 // this will ask the user what they'd like to do
@@ -30,24 +32,31 @@ const startQuestion = [
     }
 ];
 
-const viewEmployeesByDepartmentQuestion = [
-    {
-        type: "list",
-        name: "department",
-        message: "Which department would you like to view?",
-        choices: []
-    }
-];
-
 const start = () => {
     inquirer.prompt(startQuestion).then((answer) => {
         if (answer.choices === "View All Employees"){
         newDB.viewEmployees();
         } else if (answer.choices === "View All Employees by Department") {
-            inquirer.prompt(viewEmployeesByDepartmentQuestion).then((answer) => {
-                console.log(answer);
+            connection.query('SELECT department FROM department', (err, result) => {
+                if (err){
+                    throw err;
+                }
+                const departmentArray = [];
+                result.forEach((department) => {
+                    departmentArray.push(department.department);
+                })
+                inquirer.prompt({
+                    type: "list",
+                    name: "department",
+                    message: "Which department would you like to view?",
+                    choices: departmentArray
+                }).then((answer) => {
+                    console.log(answer.department);
+                    newDB.findEmployeeByDepartment(answer.department);
+                });
+                
             });
-            // newDB.findEmployeeByDepartment();
+            // newDB.findDepartment();
         } else if (answer.chocies === "View all Employees by Manager") {
             newDB.findEmployeesByManager();
         } else if (answer.choices === "Add Employee") {
@@ -71,7 +80,4 @@ const start = () => {
 }
 
 
-// newDB.viewEmployees();
 start();
-// if the user selects to view employees it is going to call the get Employees function down below
-// call the findEmployee() function from the Database class
