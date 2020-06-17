@@ -4,14 +4,6 @@ const newDB = new Database();
 const connection = require('./db/connection');
 const { end } = require('./db/connection');
 
-// create a prompt where the app is started
-// this will ask the user what they'd like to do
-// choices: [
-//     {
-//         name:
-//         value:
-//     }
-// ]
 const startQuestion = [
     {
         type: "list",
@@ -20,7 +12,6 @@ const startQuestion = [
         choices: [
             "View All Employees",
             "View All Employees by Department",
-            "View All Employees by Manager",
             "Add Employee",
             "Remove Employee",
             "Update Employee Role",
@@ -37,29 +28,8 @@ const start = () => {
         if (answer.choices === "View All Employees"){
         newDB.viewEmployees();
         } else if (answer.choices === "View All Employees by Department") {
-            // connection.query('SELECT department FROM department', (err, result) => {
-            //     if (err){
-            //         throw err;
-            //     }
-            //     const departmentArray = [];
-            //     result.forEach((department) => {
-            //         departmentArray.push(department.department);
-            //     })
-            //     inquirer.prompt({
-            //         type: "list",
-            //         name: "department",
-            //         message: "Which department would you like to view?",
-            //         choices: departmentArray
-            //     }).then((answer) => {
-            //         console.log(answer.department);
-            //         newDB.findEmployeeByDepartment(answer.department);
-            //     });
-                
-            // });
             newDB.findDepartment();
-        } else if (answer.chocies === "View all Employees by Manager") {
-            newDB.findEmployeesByManager();
-        } else if (answer.choices === "Add Employee") {
+        }  else if (answer.choices === "Add Employee") {
             newDB.createEmployee();
         } else if (answer.choices === "Remove Employee") {
             newDB.removeEmployee();
@@ -81,3 +51,9 @@ const start = () => {
 
 
 start();
+
+// Bonus items if time allows:
+//             "View all Employees by Manager",
+// else if (answer.choices === "View all Employees by Manager") {
+//     newDB.findEmployeesByManager();
+// }
