@@ -29,12 +29,12 @@ class Database {
   createEmployee() {
     //   Make multiple queries at once so we can get a list of departments and a list of employees to fill into two of the inquirer questions.
     this.connection.query(
-      "SELECT department.department, department.id FROM department; SELECT id, first_name, last_name, manager_id FROM employee;",
+      "SELECT department.department, department.id FROM department; SELECT id, first_name, last_name, manager_id FROM employee; SELECT id, title, department_id from role;",
       (err, results) => {
-        const departmentArray = [];
+        const roleArray = [];
         // Using the results from the first query, push each department into the departmentArray
-        results[0].forEach((item) => {
-          departmentArray.push(item.department);
+        results[2].forEach((item) => {
+          roleArray.push(item.title);
         });
         const employeeNames = ["None"];
         // Using the results from the second query, push each employee name (first and last) into the employeeNames array
@@ -56,9 +56,9 @@ class Database {
             },
             {
               type: "list",
-              name: "department",
-              message: "What department is the employee in?",
-              choices: departmentArray,
+              name: "role",
+              message: "What is the employee's role?",
+              choices: roleArray,
             },
             {
               type: "list",
@@ -68,29 +68,33 @@ class Database {
             },
           ])
           .then((answers) => {
-            // console.log(results[1], 'this should show the manager id...');
             const managerName = answers.manager.split(" ");
-            // console.log(managerName, "this should be the manager name?");
             let newManagerID;
             results[1].forEach((employee) => {
-                if (answers.manager === "None") {
-                    newManagerID = null;
-                } else if (employee.first_name === managerName[0] && employee.last_name === managerName[1]) {
-                    newManagerID = employee.id
-                }
+              if (answers.manager === "None") {
+                newManagerID = null;
+              } else if (
+                employee.first_name === managerName[0] &&
+                employee.last_name === managerName[1]
+              ) {
+                newManagerID = employee.id;
+              }
             });
-            console.log(`We have a match! ${newManagerID}`)
-            results[0].forEach((object) => {
-                if (answers.department === object.department) {
-                    const department = answers.department;
-                    this.connection.query('SELECT id FROM department WHERE department=?;', [department], (err, result) => {
-                        if (err) throw err;
-                        console.log(result);
-                        const department = result[0].id
-                        console.log(department);
-                        this.connection.query('INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)', [answers.firstName, answers.lastName, department, newManagerID])
-                    });
-                }
+            let role;
+            results[2].forEach((item) => {
+              if (answers.role === item.title) {
+                role = item.id;
+                this.connection.query(
+                  "INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)",
+                  [answers.firstName, answers.lastName, role, newManagerID],
+                  (err) => {
+                    if (err) throw err;
+                    console.log(
+                      `The new employee has been added as a/an ${item.title}`
+                    );
+                  }
+                );
+              }
             });
             //   this.connection.query('INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ? ,?)', [answers.firstName, answers.lastName, ])
           });
@@ -109,30 +113,37 @@ class Database {
 
   removeEmployee() {
     //   connect to database to retrieve a list of employees
-      this.connection.query('SELECT first_name, last_name FROM employee', (err, result) => {
-          const namesArray = [];
+    this.connection.query(
+      "SELECT first_name, last_name FROM employee",
+      (err, result) => {
+        const namesArray = [];
         //   Use a forEach to concat the first name to the last name for each employee
-          result.forEach((name) => {
-              const fullName = `${name.first_name} ${name.last_name}`;
-              namesArray.push(fullName);
-          });
+        result.forEach((name) => {
+          const fullName = `${name.first_name} ${name.last_name}`;
+          namesArray.push(fullName);
+        });
         //   ask the user who they would like to remove
-          inquirer.prompt(
-            {
-                type: "list",
-                name: "employee",
-                message: "Which employee would you like to remove?",
-                choices: namesArray
-            }
-            ).then((answer) => {
-                // take the answer and split the string into two strings: one with the first name and one with the last name
-               const splitNames = answer.employee.split(" ");
-                // make a delete statement to the database to delete the employee whose firstname and last name matches the one the user selected.
-                this.connection.query('DELETE FROM employee WHERE first_name=? AND last_name=?', [splitNames[0], splitNames[1]], (err) => {
-                    if (err) throw err;
-                });
-            });
-      })
+        inquirer
+          .prompt({
+            type: "list",
+            name: "employee",
+            message: "Which employee would you like to remove?",
+            choices: namesArray,
+          })
+          .then((answer) => {
+            // take the answer and split the string into two strings: one with the first name and one with the last name
+            const splitNames = answer.employee.split(" ");
+            // make a delete statement to the database to delete the employee whose firstname and last name matches the one the user selected.
+            this.connection.query(
+              "DELETE FROM employee WHERE first_name=? AND last_name=?",
+              [splitNames[0], splitNames[1]],
+              (err) => {
+                if (err) throw err;
+              }
+            );
+          });
+      }
+    );
   }
 
   // findEmployeesByManager(){
