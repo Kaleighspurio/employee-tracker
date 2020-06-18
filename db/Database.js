@@ -28,10 +28,8 @@ class Database {
     ).then((answer) => {
         this.connection.query('INSERT INTO department (department) VALUES (?)', [answer.newDepartment], (err) => {
             if (err) throw err;
-            this.connection.query('SELECT * FROM department', (err, result) => {
-            console.table(result);
-            console.log("Here are all current departments");
-            });
+            this.viewDepartments();
+            console.log("Here is the updated department list");
         });
     });
   }
@@ -256,6 +254,20 @@ class Database {
                   if (err) throw err;
               });
           });
+      });
+  }
+
+  viewDepartments() {
+    this.connection.query('SELECT * FROM department', (err, result) => {
+        if (err) throw err;
+        console.table(result);
+    });
+  }
+
+  viewRoles() {
+      this.connection.query('SELECT id, title, salary FROM role', (err, result) => {
+          if (err) throw err;
+          console.table(result);
       });
   }
 
