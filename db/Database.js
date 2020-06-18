@@ -19,10 +19,21 @@ class Database {
   }
 
   createDepartment() {
-    this.connection.query(
-      // write the query here...
-      "SELECT"
-    );
+    inquirer.prompt(
+        {
+            type: "input",
+            name: "newDepartment",
+            message: "What is the new department?"
+        }
+    ).then((answer) => {
+        this.connection.query('INSERT INTO department (department) VALUES (?)', [answer.newDepartment], (err) => {
+            if (err) throw err;
+            this.connection.query('SELECT * FROM department', (err, result) => {
+            console.table(result);
+            console.log("Here are all current departments");
+            });
+        });
+    });
   }
 
   createEmployee() {
@@ -97,6 +108,8 @@ class Database {
                     console.log(
                       `The new employee, ${answers.firstName} ${answers.lastName}, has been added as a/an ${item.title}`
                     );
+                    this.viewEmployees();
+                    console.log('Here is the updated Employee table');
                   }
                 );
               }
