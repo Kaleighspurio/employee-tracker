@@ -68,8 +68,10 @@ class Database {
             },
           ])
           .then((answers) => {
+            //   take the name that the user selected in the manager questions and split it into two separate strings for first name and last name.
             const managerName = answers.manager.split(" ");
             let newManagerID;
+            // Compare what the user answered in the prompt for the manager question with each employee in the database.  If the user selected "None" for manager, then the managerID is set to null.  Otherwise, the managerID becomes the employee id of whichever employee matches the first and last name that was selected.
             results[1].forEach((employee) => {
               if (answers.manager === "None") {
                 newManagerID = null;
@@ -81,9 +83,11 @@ class Database {
               }
             });
             let role;
+            // Compare the users answer to the role question with the role titles from the database, then set the role id using the query made at the start of this function.
             results[2].forEach((item) => {
               if (answers.role === item.title) {
                 role = item.id;
+                // Add the new employee and pass in the first and last names that were provided by the user
                 this.connection.query(
                   "INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)",
                   [answers.firstName, answers.lastName, role, newManagerID],
@@ -96,12 +100,9 @@ class Database {
                 );
               }
             });
-            //   this.connection.query('INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ? ,?)', [answers.firstName, answers.lastName, ])
           });
       }
     );
-
-    // this.connection.query('INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ()';
   }
 
   createRole() {
@@ -199,24 +200,6 @@ class Database {
         console.table(results);
       }
     );
-    // this.connection.query('SELECT * FROM department WHERE department=? RIGHT JOIN role (department.id=role.department_id) RIGHT JOIN employee (role.id=employee.role_id)', [department], (err, result) => {
-    //     console.table(result)
-    // });
-    // this.connection.query('SELECT department FROM department', (err, result) => {
-    //     if (err){
-    //         throw err;
-    //     }
-    //     const departmentArray = [];
-    //     result.forEach((department) => {
-    //         departmentArray.push(department.department);
-    //     })
-    //     inquirer.prompt({
-    //         type: "list",
-    //         name: "department",
-    //         message: "Which department would you like to view?",
-    //         choices: departmentArray
-    //     }).then();
-    // });
   }
 
   updateEmployeeRole() {}
