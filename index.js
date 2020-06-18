@@ -1,8 +1,8 @@
 const inquirer = require("inquirer");
 const Database = require("./db/Database");
 const newDB = new Database();
-const connection = require("./db/connection");
-const { end } = require("./db/connection");
+// const connection = require("./db/connection");
+// const { end } = require("./db/connection");
 
 const startQuestion = [
   {

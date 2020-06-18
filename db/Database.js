@@ -1,6 +1,5 @@
 const connection = require("./connection");
 const inquirer = require("inquirer");
-// const array = [];
 
 class Database {
   constructor() {
@@ -27,9 +26,11 @@ class Database {
   }
 
   createEmployee() {
-    //   Make multiple queries at once so we can get a list of departments and a list of employees to fill into two of the inquirer questions.
+    //   Make multiple queries at once so we can get a list of departments and a list of employees to fill into two of the inquirer questions and then can utilize this info when we INSERT INTO employee later.
     this.connection.query(
-      "SELECT department.department, department.id FROM department; SELECT id, first_name, last_name, manager_id FROM employee; SELECT id, title, department_id from role;",
+      `SELECT department.department, department.id FROM department;
+      SELECT id, first_name, last_name, manager_id FROM employee;
+      SELECT id, title, department_id from role;`,
       (err, results) => {
         const roleArray = [];
         // Using the results from the first query, push each department into the departmentArray
@@ -94,7 +95,7 @@ class Database {
                   (err) => {
                     if (err) throw err;
                     console.log(
-                      `The new employee has been added as a/an ${item.title}`
+                      `The new employee, ${answers.firstName} ${answers.lastName}, has been added as a/an ${item.title}`
                     );
                   }
                 );
@@ -155,9 +156,6 @@ class Database {
   //     console.table(results);
   //     inquirer.prompt({}).then();
 
-  //     this.connection.query(
-  //         // write the query here...
-  //     );
   //     });
 
   // }
@@ -202,7 +200,51 @@ class Database {
     );
   }
 
-  updateEmployeeRole() {}
+  updateEmployeeRole() {
+    //   make queries to the role and employee tables so that the choices for the prompt questions can be provided
+      this.connection.query(`SELECT * FROM role; SELECT * FROM employee;`, (err, results) => {
+          console.log(results);
+          const nameArray = ["Nevermind, I don't want to make an update"]
+        //   for each employee in the employee table, string together the first and last names and push them to the nameArray
+          results[1].forEach((employee) => {
+            const name = `${employee.first_name} ${employee.last_name}`;
+            nameArray.push(name);
+          });
+        //   for each role in the role table, push the title to the roleArray.
+          const roleArray = [];
+          results[0].forEach((role) => {
+            roleArray.push(role.title);
+          });
+          
+          inquirer.prompt([
+              {
+                  type: 'list',
+                  name: "employee",
+                  message: "Which employee would you like to update?",
+                  choices: nameArray
+              },
+              {
+                  type: "list",
+                  name: "newRole",
+                  message: "What is their new role?",
+                  choices: roleArray
+              }
+          ]).then((answers) => {
+              console.log(answers);
+            //   match the role the user provided in the inquirer answer to the role in the database and set the id to the roleID variable to be passed into the UPDATE
+              const matchingRole = results[0].find(element => element.title === answers.newRole);
+              const roleID = matchingRole.id
+            //   Split the employee name from the answer into 2 separate strings for first and last name
+              const employeeName = answers.employee.split(" ");
+            //   find where the prompt answer names match the names in the database and set the id to the new variable employeeID which will be passed into the UPDATE statement
+              const matchingEmployeeObject = results[1].find(element => element.first_name === employeeName[0] && element.last_name === employeeName[1]);
+              const employeeID = matchingEmployeeObject.id;
+              this.connection.query('UPDATE employee SET role_id=? WHERE id=?', [roleID, employeeID], (err) => {
+                  if (err) throw err;
+              });
+          });
+      });
+  }
 
   updateEmployeeManager() {}
 
