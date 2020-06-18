@@ -28,43 +28,56 @@ class Database {
 
   createEmployee() {
     this.connection.query(
-      "SELECT department.department FROM department; SELECT first_name, last_name FROM employee;",
+      "SELECT department.department, department.id FROM department; SELECT first_name, last_name, manager_id FROM employee;",
       (err, result) => {
         const departmentArray = [];
         result[0].forEach((item) => {
           departmentArray.push(item.department);
         });
-        console.log(result[1]);
-        const employeeNames = [];
+        // console.log(result[0][0].id);
+        const employeeNames = ["None"];
         result[1].forEach((item) => {
-           const name = `${item.first_name} ${item.last_name}`;
-           employeeNames.push(name)
+          const name = `${item.first_name} ${item.last_name}`;
+          employeeNames.push(name);
         });
-        console.log(employeeNames);
-        inquirer.prompt([
+        inquirer
+          .prompt([
             {
-                type: "input",
-                name: "firstName",
-                message: "What is the employee's first name?"
+              type: "input",
+              name: "firstName",
+              message: "What is the employee's first name?",
             },
             {
-                type: "input",
-                name: "lastName",
-                message: "What is the employee's last name?"
+              type: "input",
+              name: "lastName",
+              message: "What is the employee's last name?",
             },
             {
-                type: "list",
-                name: "department",
-                message: "What department is the employee in?",
-                choices: departmentArray
+              type: "list",
+              name: "department",
+              message: "What department is the employee in?",
+              choices: departmentArray,
             },
             {
-                type: "list",
-                name: "manager",
-                message: "Who is their manager?",
-                choices: employeeNames
-            }
-        ]).then();
+              type: "list",
+              name: "manager",
+              message: "Who is their manager?",
+              choices: employeeNames,
+            },
+          ])
+          .then((answers) => {
+
+            result[0].forEach((object) => {
+                if (answers.department === object.department) {
+                    const department = answers.department;
+                    this.connection.query('SELECT id FROM department WHERE department=?;', [department], (err, result) => {
+                        if (err) throw err;
+                        this.connection.query('INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)', [answers.firstName, answers.lastName, department, null])
+                    });
+                }
+            });
+            //   this.connection.query('INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ? ,?)', [answers.firstName, answers.lastName, ])
+          });
       }
     );
 
@@ -78,7 +91,33 @@ class Database {
       ();
   }
 
-  removeEmployee() {}
+  removeEmployee() {
+    //   connect to database to retrieve a list of employees
+      this.connection.query('SELECT first_name, last_name FROM employee', (err, result) => {
+          const namesArray = [];
+        //   Use a forEach to concat the first name to the last name for each employee
+          result.forEach((name) => {
+              const fullName = `${name.first_name} ${name.last_name}`;
+              namesArray.push(fullName);
+          });
+        //   ask the user who they would like to remove
+          inquirer.prompt(
+            {
+                type: "list",
+                name: "employee",
+                message: "Which employee would you like to remove?",
+                choices: namesArray
+            }
+            ).then((answer) => {
+                // take the answer and split the string into two strings: one with the first name and one with the last name
+               const splitNames = answer.employee.split(" ");
+                // make a delete statement to the database to delete the employee whose firstname and last name matches the one the user selected.
+                this.connection.query('DELETE FROM employee WHERE first_name=? AND last_name=?', [splitNames[0], splitNames[1]], (err) => {
+                    if (err) throw err;
+                });
+            });
+      })
+  }
 
   // findEmployeesByManager(){
   //     this.connection.query('SELECT employee.id, employee.first_name, employee.last_name, role.salary, department.department, role.title, employee.manager_id FROM employee LEFT JOIN role ON (employee.role_id=role.id) LEFT JOIN department ON (role.department_id=department.id);', (err, results) => {
