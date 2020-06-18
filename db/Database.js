@@ -27,16 +27,18 @@ class Database {
   }
 
   createEmployee() {
+    //   Make multiple queries at once so we can get a list of departments and a list of employees to fill into two of the inquirer questions.
     this.connection.query(
-      "SELECT department.department, department.id FROM department; SELECT first_name, last_name, manager_id FROM employee;",
-      (err, result) => {
+      "SELECT department.department, department.id FROM department; SELECT id, first_name, last_name, manager_id FROM employee;",
+      (err, results) => {
         const departmentArray = [];
-        result[0].forEach((item) => {
+        // Using the results from the first query, push each department into the departmentArray
+        results[0].forEach((item) => {
           departmentArray.push(item.department);
         });
-        // console.log(result[0][0].id);
         const employeeNames = ["None"];
-        result[1].forEach((item) => {
+        // Using the results from the second query, push each employee name (first and last) into the employeeNames array
+        results[1].forEach((item) => {
           const name = `${item.first_name} ${item.last_name}`;
           employeeNames.push(name);
         });
@@ -66,13 +68,27 @@ class Database {
             },
           ])
           .then((answers) => {
-
-            result[0].forEach((object) => {
+            // console.log(results[1], 'this should show the manager id...');
+            const managerName = answers.manager.split(" ");
+            // console.log(managerName, "this should be the manager name?");
+            let newManagerID;
+            results[1].forEach((employee) => {
+                if (answers.manager === "None") {
+                    newManagerID = null;
+                } else if (employee.first_name === managerName[0] && employee.last_name === managerName[1]) {
+                    newManagerID = employee.id
+                }
+            });
+            console.log(`We have a match! ${newManagerID}`)
+            results[0].forEach((object) => {
                 if (answers.department === object.department) {
                     const department = answers.department;
                     this.connection.query('SELECT id FROM department WHERE department=?;', [department], (err, result) => {
                         if (err) throw err;
-                        this.connection.query('INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)', [answers.firstName, answers.lastName, department, null])
+                        console.log(result);
+                        const department = result[0].id
+                        console.log(department);
+                        this.connection.query('INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)', [answers.firstName, answers.lastName, department, newManagerID])
                     });
                 }
             });
