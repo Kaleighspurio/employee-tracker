@@ -1,6 +1,5 @@
 const connection = require("./connection");
 const inquirer = require("inquirer");
-const { isNullOrUndefined } = require("util");
 
 class Database {
   constructor() {
@@ -20,19 +19,46 @@ class Database {
   }
 
   createDepartment() {
-    inquirer.prompt(
-        {
-            type: "input",
-            name: "newDepartment",
-            message: "What is the new department?"
+    inquirer
+      .prompt({
+        type: "input",
+        name: "newDepartment",
+        message: "What is the new department?",
+      })
+      .then((answer) => {
+        //   Some validation in case the user doesn't type anything in.
+        const newDepartment = answer.newDepartment;
+        if (newDepartment === "") {
+          console.log(
+            "Oops, looks like you didn't enter a department name.  Try again"
+          );
+          this.createDepartment();
+        } else {
+          inquirer
+            .prompt({
+              type: "list",
+              name: "correct",
+              message: `You typed ${newDepartment} as the new department.  Is that correct?`,
+              choices: ["Yes", "No"],
+            })
+            .then((answer) => {
+              if (answer.correct === "No") {
+                console.log("Ok, lets try again.");
+                this.createDepartment();
+              } else {
+                this.connection.query(
+                  "INSERT INTO department (department) VALUES (?)",
+                  [newDepartment],
+                  (err) => {
+                    if (err) throw err;
+                    this.viewDepartments();
+                    console.log("Here is the updated department list");
+                  }
+                );
+              }
+            });
         }
-    ).then((answer) => {
-        this.connection.query('INSERT INTO department (department) VALUES (?)', [answer.newDepartment], (err) => {
-            if (err) throw err;
-            this.viewDepartments();
-            console.log("Here is the updated department list");
-        });
-    });
+      });
   }
 
   createEmployee() {
@@ -108,7 +134,7 @@ class Database {
                       `The new employee, ${answers.firstName} ${answers.lastName}, has been added as a/an ${item.title}`
                     );
                     this.viewEmployees();
-                    console.log('Here is the updated Employee table');
+                    console.log("Here is the updated Employee table");
                   }
                 );
               }
@@ -119,77 +145,93 @@ class Database {
   }
 
   createRole() {
-    this.connection
-      .query('SELECT * FROM role; SELECT * FROM department;', (err, result) => {
+    this.connection.query(
+      "SELECT * FROM role; SELECT * FROM department;",
+      (err, result) => {
         // generate an array of deparment names to put in the choices of one of the inquirer questions.
         const departmentArray = [];
         result[1].forEach((object) => {
-            let departmentName = object.department;
-            departmentArray.push(departmentName);
+          let departmentName = object.department;
+          departmentArray.push(departmentName);
         });
-        inquirer.prompt([
+        inquirer
+          .prompt([
             {
-                type: "input",
-                name: "newRole",
-                message: "What is the role title?"
+              type: "input",
+              name: "newRole",
+              message: "What is the role title?",
             },
             {
-                type: "input",
-                name: "salary",
-                message: "What is the salary for this role? (No commas, numbers only)"
+              type: "input",
+              name: "salary",
+              message:
+                "What is the salary for this role? (No commas, numbers only)",
             },
             {
-                type: "list",
-                name: "department",
-                message: "What department is this role in?",
-                choices: departmentArray
-            }
-        ]).then((answers) => {
-            console.log(result[1])
+              type: "list",
+              name: "department",
+              message: "What department is this role in?",
+              choices: departmentArray,
+            },
+          ])
+          .then((answers) => {
+            console.log(result[1]);
             let departmentID;
             result[1].forEach((object) => {
-                if (object.department === answers.department) {
-                    departmentID = object.id;
-                }
+              if (object.department === answers.department) {
+                departmentID = object.id;
+              }
             });
-            
+
             // answers.department
             // put existing roles in an array so we can check whether the new role already exists.
             const existingRolesArray = [];
             result[0].forEach((roleObject) => {
-                const existingRole = roleObject.title;
-                existingRolesArray.push(existingRole);
+              const existingRole = roleObject.title;
+              existingRolesArray.push(existingRole);
             });
             // make sure the salary is a number
             const salary = parseInt(answers.salary);
             // This checks whether a role of the title the user gave already exists.  If it does, it will not create the new role and will allow them to enter a different new role, or else just quit.
             if (existingRolesArray.includes(answers.newRole)) {
-                inquirer.prompt(
-                    {
-                        type: "list",
-                        name: "tryAgain",
-                        message: "That role already exists.  You cannot add a role with the same title as an existing role.Would you like to add a different role?",
-                        choices: ["Yes", "Noe"]
-                    }
-                ).then((tryAgainAnswer) => {
-                    if (tryAgainAnswer.tryAgain === "Yes") {
-                        this.createRole();
-                    } else {
-                        this.quit();
-                    }
+              inquirer
+                .prompt({
+                  type: "list",
+                  name: "tryAgain",
+                  message:
+                    "That role already exists.  You cannot add a role with the same title as an existing role.Would you like to add a different role?",
+                  choices: ["Yes", "Noe"],
+                })
+                .then((tryAgainAnswer) => {
+                  if (tryAgainAnswer.tryAgain === "Yes") {
+                    this.createRole();
+                  } else {
+                    this.quit();
+                  }
                 });
-                // This checks to make sure there was input provided for each question.  If not, it runs the prompt again
-            } else if (answers.newRole == "" || answers.newRole == null || answers.salary == "") {
-                console.log("Oops, you forgot to type in the role title or the salary.  Please try again")
-                this.createRole();
+              // This checks to make sure there was input provided for each question.  If not, it runs the prompt again
+            } else if (
+              answers.newRole == "" ||
+              answers.newRole == null ||
+              answers.salary == ""
+            ) {
+              console.log(
+                "Oops, you forgot to type in the role title or the salary.  Please try again"
+              );
+              this.createRole();
             } else {
-                this.connection.query('INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)', [answers.newRole, salary, departmentID], (err) => {
-                    if (err) throw err;
-                    console.log("New role succesfully added.");
-                });
+              this.connection.query(
+                "INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)",
+                [answers.newRole, salary, departmentID],
+                (err) => {
+                  if (err) throw err;
+                  console.log("New role succesfully added.");
+                }
+              );
             }
-        });
-      });
+          });
+      }
+    );
   }
 
   removeEmployee() {
@@ -281,62 +323,80 @@ class Database {
 
   updateEmployeeRole() {
     //   make queries to the role and employee tables so that the choices for the prompt questions can be provided
-      this.connection.query(`SELECT * FROM role; SELECT * FROM employee;`, (err, results) => {
-          console.log(results);
-          const nameArray = ["Nevermind, I don't want to make an update"]
+    this.connection.query(
+      `SELECT * FROM role; SELECT * FROM employee;`,
+      (err, results) => {
+        console.log(results);
+        const nameArray = ["Nevermind, I don't want to make an update"];
         //   for each employee in the employee table, string together the first and last names and push them to the nameArray
-          results[1].forEach((employee) => {
-            const name = `${employee.first_name} ${employee.last_name}`;
-            nameArray.push(name);
-          });
+        results[1].forEach((employee) => {
+          const name = `${employee.first_name} ${employee.last_name}`;
+          nameArray.push(name);
+        });
         //   for each role in the role table, push the title to the roleArray.
-          const roleArray = [];
-          results[0].forEach((role) => {
-            roleArray.push(role.title);
-          });
-          
-          inquirer.prompt([
-              {
-                  type: 'list',
-                  name: "employee",
-                  message: "Which employee would you like to update?",
-                  choices: nameArray
-              },
-              {
-                  type: "list",
-                  name: "newRole",
-                  message: "What is their new role?",
-                  choices: roleArray
-              }
-          ]).then((answers) => {
-              console.log(answers);
+        const roleArray = [];
+        results[0].forEach((role) => {
+          roleArray.push(role.title);
+        });
+
+        inquirer
+          .prompt([
+            {
+              type: "list",
+              name: "employee",
+              message: "Which employee would you like to update?",
+              choices: nameArray,
+            },
+            {
+              type: "list",
+              name: "newRole",
+              message: "What is their new role?",
+              choices: roleArray,
+            },
+          ])
+          .then((answers) => {
+            console.log(answers);
             //   match the role the user provided in the inquirer answer to the role in the database and set the id to the roleID variable to be passed into the UPDATE
-              const matchingRole = results[0].find(element => element.title === answers.newRole);
-              const roleID = matchingRole.id
+            const matchingRole = results[0].find(
+              (element) => element.title === answers.newRole
+            );
+            const roleID = matchingRole.id;
             //   Split the employee name from the answer into 2 separate strings for first and last name
-              const employeeName = answers.employee.split(" ");
+            const employeeName = answers.employee.split(" ");
             //   find where the prompt answer names match the names in the database and set the id to the new variable employeeID which will be passed into the UPDATE statement
-              const matchingEmployeeObject = results[1].find(element => element.first_name === employeeName[0] && element.last_name === employeeName[1]);
-              const employeeID = matchingEmployeeObject.id;
-              this.connection.query('UPDATE employee SET role_id=? WHERE id=?', [roleID, employeeID], (err) => {
-                  if (err) throw err;
-              });
+            const matchingEmployeeObject = results[1].find(
+              (element) =>
+                element.first_name === employeeName[0] &&
+                element.last_name === employeeName[1]
+            );
+            const employeeID = matchingEmployeeObject.id;
+            this.connection.query(
+              "UPDATE employee SET role_id=? WHERE id=?",
+              [roleID, employeeID],
+              (err) => {
+                if (err) throw err;
+              }
+            );
           });
-      });
+      }
+    );
   }
 
   viewDepartments() {
-    this.connection.query('SELECT * FROM department', (err, result) => {
-        if (err) throw err;
-        console.table(result);
+    this.connection.query("SELECT * FROM department", (err, result) => {
+      if (err) throw err;
+      console.table(result);
     });
   }
 
   viewRoles() {
-      this.connection.query('SELECT id, title, salary FROM role', (err, result) => {
-          if (err) throw err;
-          console.table(result);
-      });
+    this.connection.query(
+      "SELECT id, title, salary FROM role",
+      (err, result) => {
+        if (err) throw err;
+        console.table(result);
+      }
+    );
   }
 
   updateEmployeeManager() {}
