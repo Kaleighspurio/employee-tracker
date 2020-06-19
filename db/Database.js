@@ -34,6 +34,7 @@ class Database {
           );
           this.createDepartment();
         } else {
+          // This allows the user to double check their input before it is entered into the database.
           inquirer
             .prompt({
               type: "list",
@@ -105,40 +106,48 @@ class Database {
             },
           ])
           .then((answers) => {
-            //   take the name that the user selected in the manager questions and split it into two separate strings for first name and last name.
-            const managerName = answers.manager.split(" ");
-            let newManagerID;
-            // Compare what the user answered in the prompt for the manager question with each employee in the database.  If the user selected "None" for manager, then the managerID is set to null.  Otherwise, the managerID becomes the employee id of whichever employee matches the first and last name that was selected.
-            results[1].forEach((employee) => {
-              if (answers.manager === "None") {
-                newManagerID = null;
-              } else if (
-                employee.first_name === managerName[0] &&
-                employee.last_name === managerName[1]
-              ) {
-                newManagerID = employee.id;
-              }
-            });
-            let role;
-            // Compare the users answer to the role question with the role titles from the database, then set the role id using the query made at the start of this function.
-            results[2].forEach((item) => {
-              if (answers.role === item.title) {
-                role = item.id;
-                // Add the new employee and pass in the first and last names that were provided by the user
-                this.connection.query(
-                  "INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)",
-                  [answers.firstName, answers.lastName, role, newManagerID],
-                  (err) => {
-                    if (err) throw err;
-                    console.log(
-                      `The new employee, ${answers.firstName} ${answers.lastName}, has been added as a/an ${item.title}`
-                    );
-                    this.viewEmployees();
-                    console.log("Here is the updated Employee table");
-                  }
-                );
-              }
-            });
+            //   Some validation to make sure a first name and last name was typed.
+            if (answers.firstName === "" || answers.lastName === "") {
+              console.log(
+                "Oops, you forgot to type in a first or a last name.  Lets try again."
+              );
+              this.createEmployee();
+            } else {
+              //   take the name that the user selected in the manager questions and split it into two separate strings for first name and last name.
+              const managerName = answers.manager.split(" ");
+              let newManagerID;
+              // Compare what the user answered in the prompt for the manager question with each employee in the database.  If the user selected "None" for manager, then the managerID is set to null.  Otherwise, the managerID becomes the employee id of whichever employee matches the first and last name that was selected.
+              results[1].forEach((employee) => {
+                if (answers.manager === "None") {
+                  newManagerID = null;
+                } else if (
+                  employee.first_name === managerName[0] &&
+                  employee.last_name === managerName[1]
+                ) {
+                  newManagerID = employee.id;
+                }
+              });
+              let role;
+              // Compare the users answer to the role question with the role titles from the database, then set the role id using the query made at the start of this function.
+              results[2].forEach((item) => {
+                if (answers.role === item.title) {
+                  role = item.id;
+                  // Add the new employee and pass in the first and last names that were provided by the user
+                  this.connection.query(
+                    "INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)",
+                    [answers.firstName, answers.lastName, role, newManagerID],
+                    (err) => {
+                      if (err) throw err;
+                      console.log(
+                        `The new employee, ${answers.firstName} ${answers.lastName}, has been added as a/an ${item.title}`
+                      );
+                      this.viewEmployees();
+                      console.log("Here is the updated Employee table");
+                    }
+                  );
+                }
+              });
+            }
           });
       }
     );
@@ -268,18 +277,6 @@ class Database {
       }
     );
   }
-
-  // findEmployeesByManager(){
-  //     this.connection.query('SELECT employee.id, employee.first_name, employee.last_name, role.salary, department.department, role.title, employee.manager_id FROM employee LEFT JOIN role ON (employee.role_id=role.id) LEFT JOIN department ON (role.department_id=department.id);', (err, results) => {
-  //         if (err) {
-  //             throw err;
-  //         }
-  //     console.table(results);
-  //     inquirer.prompt({}).then();
-
-  //     });
-
-  // }
 
   findDepartment() {
     this.connection.query(
