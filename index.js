@@ -47,6 +47,7 @@ const start = () => {
       newDB.updateEmployeeManager();
     } else {
       newDB.quit();
+      return;
     }
     // start();
   });

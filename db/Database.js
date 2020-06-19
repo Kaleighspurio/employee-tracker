@@ -1,5 +1,6 @@
 const connection = require("./connection");
 const inquirer = require("inquirer");
+const { isNullOrUndefined } = require("util");
 
 class Database {
   constructor() {
@@ -119,9 +120,76 @@ class Database {
 
   createRole() {
     this.connection
-      .query
-      // write the query here...
-      ();
+      .query('SELECT * FROM role; SELECT * FROM department;', (err, result) => {
+        // generate an array of deparment names to put in the choices of one of the inquirer questions.
+        const departmentArray = [];
+        result[1].forEach((object) => {
+            let departmentName = object.department;
+            departmentArray.push(departmentName);
+        });
+        inquirer.prompt([
+            {
+                type: "input",
+                name: "newRole",
+                message: "What is the role title?"
+            },
+            {
+                type: "input",
+                name: "salary",
+                message: "What is the salary for this role? (No commas, numbers only)"
+            },
+            {
+                type: "list",
+                name: "department",
+                message: "What department is this role in?",
+                choices: departmentArray
+            }
+        ]).then((answers) => {
+            console.log(result[1])
+            let departmentID;
+            result[1].forEach((object) => {
+                if (object.department === answers.department) {
+                    departmentID = object.id;
+                }
+            });
+            
+            // answers.department
+            // put existing roles in an array so we can check whether the new role already exists.
+            const existingRolesArray = [];
+            result[0].forEach((roleObject) => {
+                const existingRole = roleObject.title;
+                existingRolesArray.push(existingRole);
+            });
+            // make sure the salary is a number
+            const salary = parseInt(answers.salary);
+            // This checks whether a role of the title the user gave already exists.  If it does, it will not create the new role and will allow them to enter a different new role, or else just quit.
+            if (existingRolesArray.includes(answers.newRole)) {
+                inquirer.prompt(
+                    {
+                        type: "list",
+                        name: "tryAgain",
+                        message: "That role already exists.  You cannot add a role with the same title as an existing role.Would you like to add a different role?",
+                        choices: ["Yes", "Noe"]
+                    }
+                ).then((tryAgainAnswer) => {
+                    if (tryAgainAnswer.tryAgain === "Yes") {
+                        this.createRole();
+                    } else {
+                        this.quit();
+                    }
+                });
+                // This checks to make sure there was input provided for each question.  If not, it runs the prompt again
+            } else if (answers.newRole == "" || answers.newRole == null || answers.salary == "") {
+                console.log("Oops, you forgot to type in the role title or the salary.  Please try again")
+                this.createRole();
+            } else {
+                this.connection.query('INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)', [answers.newRole, salary, departmentID], (err) => {
+                    if (err) throw err;
+                    console.log("New role succesfully added.");
+                });
+            }
+        });
+      });
   }
 
   removeEmployee() {
