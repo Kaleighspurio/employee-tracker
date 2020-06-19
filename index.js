@@ -17,7 +17,6 @@ const startQuestion = [
       "Add Role (please note: if the role is in a new department, the department must be created first.)",
       "View all departments",
       "View all roles/titles",
-      "Update an Employee's Manager",
       "Quit",
     ],
   },
@@ -28,7 +27,7 @@ const start = () => {
     if (answer.choices === "View All Employees") {
       newDB.viewEmployees();
     } else if (answer.choices === "View All Employees by Department") {
-      newDB.findDepartment();
+      newDB.findEmployeesByDepartment();
     } else if (answer.choices === "Add Employee") {
       newDB.createEmployee();
     } else if (answer.choices === "Remove Employee") {
@@ -43,8 +42,6 @@ const start = () => {
         newDB.viewDepartments();
     } else if (answer.choices === "View all roles/titles") {
         newDB.viewRoles();
-    } else if (answer.choices === "Update an Employee's Manager") {
-      newDB.updateEmployeeManager();
     } else {
       newDB.quit();
       return;

@@ -16,50 +16,44 @@ class Database {
         console.table(results);
       }
     );
+    this.quit();
   }
 
-  createDepartment() {
-    inquirer
-      .prompt({
-        type: "input",
-        name: "newDepartment",
-        message: "What is the new department?",
-      })
-      .then((answer) => {
-        //   Some validation in case the user doesn't type anything in.
-        const newDepartment = answer.newDepartment;
-        if (newDepartment === "") {
-          console.log(
-            "Oops, looks like you didn't enter a department name.  Try again"
-          );
-          this.createDepartment();
-        } else {
-          // This allows the user to double check their input before it is entered into the database.
-          inquirer
-            .prompt({
-              type: "list",
-              name: "correct",
-              message: `You typed ${newDepartment} as the new department.  Is that correct?`,
-              choices: ["Yes", "No"],
-            })
-            .then((answer) => {
-              if (answer.correct === "No") {
-                console.log("Ok, lets try again.");
-                this.createDepartment();
-              } else {
-                this.connection.query(
-                  "INSERT INTO department (department) VALUES (?)",
-                  [newDepartment],
-                  (err) => {
-                    if (err) throw err;
-                    this.viewDepartments();
-                    console.log("Here is the updated department list");
-                  }
-                );
-              }
-            });
+  findEmployeesByDepartment() {
+    this.connection.query(
+      "SELECT department FROM department",
+      (err, result) => {
+        if (err) {
+          throw err;
         }
-      });
+        const departmentArray = [];
+        result.forEach((department) => {
+          departmentArray.push(department.department);
+        });
+        inquirer
+          .prompt({
+            type: "list",
+            name: "department",
+            message: "Which department would you like to view?",
+            choices: departmentArray,
+          })
+          .then((answer) => {
+            // this.findEmployeesByDepartment(answer.department);
+            this.connection.query(
+              "SELECT employee.id, employee.first_name, employee.last_name, role.salary, department.department, role.title, employee.manager_id FROM employee LEFT JOIN role ON (employee.role_id=role.id) LEFT JOIN department ON (role.department_id=department.id) WHERE department.department=?;",
+              [answer.department],
+              (err, results) => {
+                if (err) {
+                  throw err;
+                }
+                console.table(results);
+              }
+            );
+            this.quit();
+          });
+      }
+    );
+    
   }
 
   createEmployee() {
@@ -144,13 +138,156 @@ class Database {
                       this.viewEmployees();
                       console.log("Here is the updated Employee table");
                     }
-                  );
+                  ); 
                 }
               });
             }
           });
       }
     );
+  }
+
+  removeEmployee() {
+    //   connect to database to retrieve a list of employees
+    this.connection.query(
+      "SELECT first_name, last_name FROM employee",
+      (err, result) => {
+        const namesArray = [];
+        //   Use a forEach to concat the first name to the last name for each employee
+        result.forEach((name) => {
+          const fullName = `${name.first_name} ${name.last_name}`;
+          namesArray.push(fullName);
+        });
+        //   ask the user who they would like to remove
+        inquirer
+          .prompt({
+            type: "list",
+            name: "employee",
+            message: "Which employee would you like to remove?",
+            choices: namesArray,
+          })
+          .then((answer) => {
+            // take the answer and split the string into two strings: one with the first name and one with the last name
+            const splitNames = answer.employee.split(" ");
+            // make a delete statement to the database to delete the employee whose firstname and last name matches the one the user selected.
+            this.connection.query(
+              "DELETE FROM employee WHERE first_name=? AND last_name=?",
+              [splitNames[0], splitNames[1]],
+              (err) => {
+                if (err) throw err;
+                console.log(`${answer.employee} has been removed from the database.`);
+              }
+            );
+            this.quit();
+          });
+      }
+    );
+  }
+
+  updateEmployeeRole() {
+    //   make queries to the role and employee tables so that the choices for the prompt questions can be provided
+    this.connection.query(
+      `SELECT * FROM role; SELECT * FROM employee;`,
+      (err, results) => {
+        console.log(results);
+        const nameArray = ["Nevermind, I don't want to make an update"];
+        //   for each employee in the employee table, string together the first and last names and push them to the nameArray
+        results[1].forEach((employee) => {
+          const name = `${employee.first_name} ${employee.last_name}`;
+          nameArray.push(name);
+        });
+        //   for each role in the role table, push the title to the roleArray.
+        const roleArray = [];
+        results[0].forEach((role) => {
+          roleArray.push(role.title);
+        });
+
+        inquirer
+          .prompt([
+            {
+              type: "list",
+              name: "employee",
+              message: "Which employee would you like to update?",
+              choices: nameArray,
+            },
+            {
+              type: "list",
+              name: "newRole",
+              message: "What is their new role?",
+              choices: roleArray,
+            },
+          ])
+          .then((answers) => {
+            //   match the role the user provided in the inquirer answer to the role in the database and set the id to the roleID variable to be passed into the UPDATE
+            const matchingRole = results[0].find(
+              (element) => element.title === answers.newRole
+            );
+            const roleID = matchingRole.id;
+            //   Split the employee name from the answer into 2 separate strings for first and last name
+            const employeeName = answers.employee.split(" ");
+            //   find where the prompt answer names match the names in the database and set the id to the new variable employeeID which will be passed into the UPDATE statement
+            const matchingEmployeeObject = results[1].find(
+              (element) =>
+                element.first_name === employeeName[0] &&
+                element.last_name === employeeName[1]
+            );
+            const employeeID = matchingEmployeeObject.id;
+            this.connection.query(
+              "UPDATE employee SET role_id=? WHERE id=?",
+              [roleID, employeeID],
+              (err) => {
+                if (err) throw err;
+                console.log(`${answers.employee}'s role has been updated to ${answers.newRole}`);
+              }
+            );
+            this.quit();
+          });
+      }
+    );
+  }
+
+  createDepartment() {
+    inquirer
+      .prompt({
+        type: "input",
+        name: "newDepartment",
+        message: "What is the new department?",
+      })
+      .then((answer) => {
+        //   Some validation in case the user doesn't type anything in.
+        const newDepartment = answer.newDepartment;
+        if (newDepartment === "") {
+          console.log(
+            "Oops, looks like you didn't enter a department name.  Try again"
+          );
+          this.createDepartment();
+        } else {
+          // This allows the user to double check their input before it is entered into the database.
+          inquirer
+            .prompt({
+              type: "list",
+              name: "correct",
+              message: `You typed ${newDepartment} as the new department.  Is that correct?`,
+              choices: ["Yes", "No"],
+            })
+            .then((answer) => {
+              if (answer.correct === "No") {
+                console.log("Ok, lets try again.");
+                this.createDepartment();
+              } else {
+                this.connection.query(
+                  "INSERT INTO department (department) VALUES (?)",
+                  [newDepartment],
+                  (err) => {
+                    if (err) throw err;
+                    this.viewDepartments();
+                    console.log("Here is the updated department list");
+                  }
+                );
+              }
+            });
+        }
+      });
   }
 
   createRole() {
@@ -184,15 +321,12 @@ class Database {
             },
           ])
           .then((answers) => {
-            console.log(result[1]);
             let departmentID;
             result[1].forEach((object) => {
               if (object.department === answers.department) {
                 departmentID = object.id;
               }
             });
-
-            // answers.department
             // put existing roles in an array so we can check whether the new role already exists.
             const existingRolesArray = [];
             result[0].forEach((roleObject) => {
@@ -237,143 +371,8 @@ class Database {
                   console.log("New role succesfully added.");
                 }
               );
+              this.quit()
             }
-          });
-      }
-    );
-  }
-
-  removeEmployee() {
-    //   connect to database to retrieve a list of employees
-    this.connection.query(
-      "SELECT first_name, last_name FROM employee",
-      (err, result) => {
-        const namesArray = [];
-        //   Use a forEach to concat the first name to the last name for each employee
-        result.forEach((name) => {
-          const fullName = `${name.first_name} ${name.last_name}`;
-          namesArray.push(fullName);
-        });
-        //   ask the user who they would like to remove
-        inquirer
-          .prompt({
-            type: "list",
-            name: "employee",
-            message: "Which employee would you like to remove?",
-            choices: namesArray,
-          })
-          .then((answer) => {
-            // take the answer and split the string into two strings: one with the first name and one with the last name
-            const splitNames = answer.employee.split(" ");
-            // make a delete statement to the database to delete the employee whose firstname and last name matches the one the user selected.
-            this.connection.query(
-              "DELETE FROM employee WHERE first_name=? AND last_name=?",
-              [splitNames[0], splitNames[1]],
-              (err) => {
-                if (err) throw err;
-              }
-            );
-          });
-      }
-    );
-  }
-
-  findDepartment() {
-    this.connection.query(
-      "SELECT department FROM department",
-      (err, result) => {
-        if (err) {
-          throw err;
-        }
-        const departmentArray = [];
-        result.forEach((department) => {
-          departmentArray.push(department.department);
-        });
-        inquirer
-          .prompt({
-            type: "list",
-            name: "department",
-            message: "Which department would you like to view?",
-            choices: departmentArray,
-          })
-          .then((answer) => {
-            console.log(answer.department);
-            this.findEmployeeByDepartment(answer.department);
-          });
-      }
-    );
-  }
-
-  findEmployeeByDepartment(department) {
-    console.log(department);
-    this.connection.query(
-      "SELECT employee.id, employee.first_name, employee.last_name, role.salary, department.department, role.title, employee.manager_id FROM employee LEFT JOIN role ON (employee.role_id=role.id) LEFT JOIN department ON (role.department_id=department.id) WHERE department.department=?;",
-      [department],
-      (err, results) => {
-        if (err) {
-          throw err;
-        }
-        console.table(results);
-      }
-    );
-  }
-
-  updateEmployeeRole() {
-    //   make queries to the role and employee tables so that the choices for the prompt questions can be provided
-    this.connection.query(
-      `SELECT * FROM role; SELECT * FROM employee;`,
-      (err, results) => {
-        console.log(results);
-        const nameArray = ["Nevermind, I don't want to make an update"];
-        //   for each employee in the employee table, string together the first and last names and push them to the nameArray
-        results[1].forEach((employee) => {
-          const name = `${employee.first_name} ${employee.last_name}`;
-          nameArray.push(name);
-        });
-        //   for each role in the role table, push the title to the roleArray.
-        const roleArray = [];
-        results[0].forEach((role) => {
-          roleArray.push(role.title);
-        });
-
-        inquirer
-          .prompt([
-            {
-              type: "list",
-              name: "employee",
-              message: "Which employee would you like to update?",
-              choices: nameArray,
-            },
-            {
-              type: "list",
-              name: "newRole",
-              message: "What is their new role?",
-              choices: roleArray,
-            },
-          ])
-          .then((answers) => {
-            console.log(answers);
-            //   match the role the user provided in the inquirer answer to the role in the database and set the id to the roleID variable to be passed into the UPDATE
-            const matchingRole = results[0].find(
-              (element) => element.title === answers.newRole
-            );
-            const roleID = matchingRole.id;
-            //   Split the employee name from the answer into 2 separate strings for first and last name
-            const employeeName = answers.employee.split(" ");
-            //   find where the prompt answer names match the names in the database and set the id to the new variable employeeID which will be passed into the UPDATE statement
-            const matchingEmployeeObject = results[1].find(
-              (element) =>
-                element.first_name === employeeName[0] &&
-                element.last_name === employeeName[1]
-            );
-            const employeeID = matchingEmployeeObject.id;
-            this.connection.query(
-              "UPDATE employee SET role_id=? WHERE id=?",
-              [roleID, employeeID],
-              (err) => {
-                if (err) throw err;
-              }
-            );
           });
       }
     );
@@ -384,6 +383,7 @@ class Database {
       if (err) throw err;
       console.table(result);
     });
+    this.quit();
   }
 
   viewRoles() {
@@ -394,9 +394,8 @@ class Database {
         console.table(result);
       }
     );
+    this.quit();
   }
-
-  updateEmployeeManager() {}
 
   quit() {
     this.connection.end();
