@@ -17,7 +17,8 @@ This application is a node.js CLI that allows the user to get, update, post, and
 Selecting each of these options will prompt the user for any additional information that is needed and then will update or change data in the database accordingly.
 
 ## Technologies
-This application utilizes the follow packages:
+This is a Node Javascript application.
+The following npm packages are also used:
 * inquirer
 * dotenv
 * mySQL
