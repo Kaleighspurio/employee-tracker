@@ -52,7 +52,6 @@ class Database {
           });
       }
     );
-    
   }
 
   createEmployee() {
@@ -137,7 +136,7 @@ class Database {
                       this.viewEmployees();
                       console.log("Here is the updated Employee table");
                     }
-                  ); 
+                  );
                 }
               });
             }
@@ -174,7 +173,9 @@ class Database {
               [splitNames[0], splitNames[1]],
               (err) => {
                 if (err) throw err;
-                console.log(`${answer.employee} has been removed from the database.`);
+                console.log(
+                  `${answer.employee} has been removed from the database.`
+                );
               }
             );
             this.quit();
@@ -235,7 +236,9 @@ class Database {
               [roleID, employeeID],
               (err) => {
                 if (err) throw err;
-                console.log(`${answers.employee}'s role has been updated to ${answers.newRole}`);
+                console.log(
+                  `${answers.employee}'s role has been updated to ${answers.newRole}`
+                );
               }
             );
             this.quit();
@@ -273,15 +276,44 @@ class Database {
                 console.log("Ok, lets try again.");
                 this.createDepartment();
               } else {
+                const existingDepartments = [];
                 this.connection.query(
-                  "INSERT INTO department (department) VALUES (?)",
-                  [newDepartment],
-                  (err) => {
+                  "SELECT department FROM department",
+                  (err, result) => {
                     if (err) throw err;
-                    this.viewDepartments();
-                    console.log("Here is the updated department list");
+                    result.forEach((department) => {
+                      existingDepartments.push(department.department);
+                    });
+                    // console.log(existingDepartments, newDepartment);
+                    if (existingDepartments.includes(newDepartment)) {
+                      console.log("That department already exists");
+                      inquirer.prompt(
+                          {
+                              type: "list",
+                              name: "tryAgain",
+                              message: "That department already exists.  Would you like to try again with a different department name, or quit?",
+                              choices: ["Try again", "Quit"]
+                          }
+                      ).then((answer) => {
+                          if (answer.tryAgain === "Try again") {
+                              this.createDepartment();
+                          } else {
+                              this.quit();
+                          }
+                      });
+                    } 
                   }
                 );
+
+                // this.connection.query(
+                //   "INSERT INTO department (department) VALUES (?)",
+                //   [newDepartment],
+                //   (err) => {
+                //     if (err) throw err;
+                //     this.viewDepartments();
+                //     console.log("Here is the updated department list");
+                //   }
+                // );
               }
             });
         }
@@ -341,7 +373,7 @@ class Database {
                   name: "tryAgain",
                   message:
                     "That role already exists.  You cannot add a role with the same title as an existing role.Would you like to add a different role?",
-                  choices: ["Yes", "Noe"],
+                  choices: ["Yes", "No"],
                 })
                 .then((tryAgainAnswer) => {
                   if (tryAgainAnswer.tryAgain === "Yes") {
@@ -369,7 +401,7 @@ class Database {
                   console.log("New role succesfully added.");
                 }
               );
-              this.quit()
+              this.quit();
             }
           });
       }
