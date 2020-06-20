@@ -46,14 +46,7 @@ const start = () => {
       newDB.quit();
       return;
     }
-    // start();
   });
 };
 
 start();
-
-// Bonus items if time allows:
-//             "View all Employees by Manager",
-// else if (answer.choices === "View all Employees by Manager") {
-//     newDB.findEmployeesByManager();
-// }

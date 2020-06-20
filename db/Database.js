@@ -287,33 +287,34 @@ class Database {
                     // console.log(existingDepartments, newDepartment);
                     if (existingDepartments.includes(newDepartment)) {
                       console.log("That department already exists");
-                      inquirer.prompt(
-                          {
-                              type: "list",
-                              name: "tryAgain",
-                              message: "That department already exists.  Would you like to try again with a different department name, or quit?",
-                              choices: ["Try again", "Quit"]
-                          }
-                      ).then((answer) => {
+                      inquirer
+                        .prompt({
+                          type: "list",
+                          name: "tryAgain",
+                          message:
+                            "That department already exists.  Would you like to try again with a different department name, or quit?",
+                          choices: ["Try again", "Quit"],
+                        })
+                        .then((answer) => {
                           if (answer.tryAgain === "Try again") {
-                              this.createDepartment();
+                            this.createDepartment();
                           } else {
-                              this.quit();
+                            this.quit();
                           }
-                      });
-                    } 
+                        });
+                    } else {
+                      this.connection.query(
+                        "INSERT INTO department (department) VALUES (?)",
+                        [newDepartment],
+                        (err) => {
+                          if (err) throw err;
+                          this.viewDepartments();
+                          console.log("Here is the updated department list");
+                        }
+                      );
+                    }
                   }
                 );
-
-                // this.connection.query(
-                //   "INSERT INTO department (department) VALUES (?)",
-                //   [newDepartment],
-                //   (err) => {
-                //     if (err) throw err;
-                //     this.viewDepartments();
-                //     console.log("Here is the updated department list");
-                //   }
-                // );
               }
             });
         }
