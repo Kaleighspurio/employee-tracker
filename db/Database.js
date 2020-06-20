@@ -26,6 +26,7 @@ class Database {
         if (err) {
           throw err;
         }
+        // push each department name into an array so we can use the department names as choices in the inquirer prompt.
         const departmentArray = [];
         result.forEach((department) => {
           departmentArray.push(department.department);
@@ -284,9 +285,8 @@ class Database {
                     result.forEach((department) => {
                       existingDepartments.push(department.department);
                     });
-                    // console.log(existingDepartments, newDepartment);
+                    // Validation to make sure the new department does not already exist in the database
                     if (existingDepartments.includes(newDepartment)) {
-                      console.log("That department already exists");
                       inquirer
                         .prompt({
                           type: "list",
@@ -352,6 +352,7 @@ class Database {
             },
           ])
           .then((answers) => {
+            // find the department id that matches the department the user selected and set it to departmentID
             let departmentID;
             result[1].forEach((object) => {
               if (object.department === answers.department) {
