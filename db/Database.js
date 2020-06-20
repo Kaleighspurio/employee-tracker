@@ -38,7 +38,6 @@ class Database {
             choices: departmentArray,
           })
           .then((answer) => {
-            // this.findEmployeesByDepartment(answer.department);
             this.connection.query(
               "SELECT employee.id, employee.first_name, employee.last_name, role.salary, department.department, role.title, employee.manager_id FROM employee LEFT JOIN role ON (employee.role_id=role.id) LEFT JOIN department ON (role.department_id=department.id) WHERE department.department=?;",
               [answer.department],
@@ -64,7 +63,7 @@ class Database {
       SELECT id, title, department_id from role;`,
       (err, results) => {
         const roleArray = [];
-        // Using the results from the first query, push each department into the departmentArray
+        // Using the results from the first query, push each department into the roleArray
         results[2].forEach((item) => {
           roleArray.push(item.title);
         });
@@ -189,7 +188,6 @@ class Database {
     this.connection.query(
       `SELECT * FROM role; SELECT * FROM employee;`,
       (err, results) => {
-        console.log(results);
         const nameArray = ["Nevermind, I don't want to make an update"];
         //   for each employee in the employee table, string together the first and last names and push them to the nameArray
         results[1].forEach((employee) => {
