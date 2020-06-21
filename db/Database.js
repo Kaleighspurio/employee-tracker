@@ -58,18 +58,17 @@ class Database {
   createEmployee() {
     //   Make multiple queries at once so we can get a list of departments and a list of employees to fill into two of the inquirer questions and then can utilize this info when we INSERT INTO employee later.
     this.connection.query(
-      `SELECT department.department, department.id FROM department;
-      SELECT id, first_name, last_name, manager_id FROM employee;
+      `SELECT id, first_name, last_name, manager_id FROM employee;
       SELECT id, title, department_id from role;`,
       (err, results) => {
         const roleArray = [];
         // Using the results from the first query, push each department into the roleArray
-        results[2].forEach((item) => {
+        results[1].forEach((item) => {
           roleArray.push(item.title);
         });
         const employeeNames = ["None"];
         // Using the results from the second query, push each employee name (first and last) into the employeeNames array
-        results[1].forEach((item) => {
+        results[0].forEach((item) => {
           const name = `${item.first_name} ${item.last_name}`;
           employeeNames.push(name);
         });
@@ -110,7 +109,7 @@ class Database {
               const managerName = answers.manager.split(" ");
               let newManagerID;
               // Compare what the user answered in the prompt for the manager question with each employee in the database.  If the user selected "None" for manager, then the managerID is set to null.  Otherwise, the managerID becomes the employee id of whichever employee matches the first and last name that was selected.
-              results[1].forEach((employee) => {
+              results[0].forEach((employee) => {
                 if (answers.manager === "None") {
                   newManagerID = null;
                 } else if (
@@ -122,7 +121,7 @@ class Database {
               });
               let role;
               // Compare the users answer to the role question with the role titles from the database, then set the role id using the query made at the start of this function.
-              results[2].forEach((item) => {
+              results[1].forEach((item) => {
                 if (answers.role === item.title) {
                   role = item.id;
                   // Add the new employee and pass in the first and last names that were provided by the user
