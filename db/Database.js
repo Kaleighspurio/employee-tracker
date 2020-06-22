@@ -1,5 +1,6 @@
 const connection = require("./connection");
 const inquirer = require("inquirer");
+const cTable = require('console.table');
 
 class Database {
   constructor() {
@@ -200,7 +201,6 @@ class Database {
         results[0].forEach((role) => {
           roleArray.push(role.title);
         });
-
         inquirer
           .prompt([
             {
