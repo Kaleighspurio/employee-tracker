@@ -22,6 +22,7 @@ The following npm packages are also used:
 * inquirer
 * dotenv
 * mySQL
+* Console.table
 
 ## Installation
 After pulling from the repository, you'll need to install the packages listed above by running `npm install` in your terminal.  You'll also need to copy the data from the schema.sql and seed.sql files and enter them into your MySQL Workbench.
